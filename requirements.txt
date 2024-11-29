@@ -7,3 +7,6 @@ TA-Lib>=0.4.0
 pandas-ta>=0.3.0
 newtulipy>=0.4.0
 python-dateutil>=2.8.0
+fastapi>=0.68.0
+uvicorn>=0.15.0
+pydantic>=1.8.0

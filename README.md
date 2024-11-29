@@ -18,6 +18,8 @@ pip install -e .
 
 ## Quick Start
 
+### Python Library Usage
+
 ```python
 from mt5gw import MetaTraderManager
 
@@ -47,46 +49,102 @@ df = mt.fetch(
 )
 ```
 
+### REST API Usage
+
+Start the API server:
+```bash
+# Start with default settings (host: 0.0.0.0, port: 8000)
+mt5gw-api
+
+# Start with custom settings
+mt5gw-api --host 127.0.0.1 --port 8080 --reload
+```
+
+Example API requests:
+```python
+import requests
+
+# Base URL for API endpoints
+BASE_URL = "http://localhost:8000/api/v1"
+
+# Get available symbols
+symbols = requests.get(f"{BASE_URL}/symbols").json()
+
+# Fetch market data with indicators
+data = requests.post(f"{BASE_URL}/data", json={
+    "instrument": "EURUSD",
+    "timeframe": "1h",
+    "bars": 100,
+    "ta_indicators": [
+        {"method": "rsi", "args": ["c"], "kwargs": {"length": 14}}
+    ]
+}).json()
+
+# Place a market order
+order = requests.post(f"{BASE_URL}/order", json={
+    "instrument": "EURUSD",
+    "order_type": "buy_market",
+    "lot_size": 0.1,
+    "stop_loss": 1.0500,
+    "take_profit": 1.0600
+}).json()
+```
+
+See [examples/api_usage.py](examples/api_usage.py) for more comprehensive API usage examples.
+
 ## Key Features
 
-### 1. **Structured Data Retrieval**
-- **Flexible Timeframes**: Supports multiple timeframes from 1 minute to 1 month, enabling granular or broad data analysis.
-- **Multi-Instrument Support**: Fetch data for one or more instruments simultaneously, with consistent and unified outputs.
-- **Customizable Parameters**: Specify date ranges, bar limits, and open/close behaviors for tailored data extraction.
+### 1. **REST API Integration**
+- **Full Feature Access**: Access all MetaTrader 5 Gateway functionality through HTTP endpoints
+- **Real-time Data**: Fetch market data, place orders, and manage positions via REST API
+- **Swagger Documentation**: Interactive API documentation available at `/docs`
+- **Cross-Platform**: Language-agnostic access to MetaTrader 5 functionality
 
-### 2. **Technical Indicator Integration**
-- **Broad Indicator Support**: Leverages popular libraries like `ta`, `talib`, `pandas_ta`, and `tulipy` for comprehensive technical indicator computation.
-- **Candle Pattern Detection**: Includes recognition of candlestick patterns from TA-Lib for advanced technical analysis.
-- **Moving Averages and Lookbacks**: Offers multiple methods such as SMA, EMA, and customizable lookback calculations.
+### 2. **Structured Data Retrieval**
+- **Flexible Timeframes**: Supports multiple timeframes from 1 minute to 1 month
+- **Multi-Instrument Support**: Fetch data for one or more instruments simultaneously
+- **Customizable Parameters**: Specify date ranges, bar limits, and open/close behaviors
 
-### 3. **Data Enrichment**
-- **Pivot Levels**: Adds standard, Fibonacci, Camarilla, Woodie, and Demark pivot levels, along with distances to these levels for deeper insights.
-- **Meta Information**: Enriches data with metadata such as day, month, hour, minute, and price summaries.
-- **Support and Resistance Levels**: Calculates key levels based on rolling windows and specific fields like close prices.
+### 3. **Technical Indicator Integration**
+- **Broad Indicator Support**: Leverages popular libraries like `ta`, `talib`, `pandas_ta`, and `tulipy`
+- **Candle Pattern Detection**: Includes recognition of candlestick patterns from TA-Lib
+- **Moving Averages and Lookbacks**: Offers multiple methods such as SMA, EMA, and customizable lookbacks
 
-### 4. **Advanced Filtering and Smoothing**
-- **Wavelet Denoising**: Smoothens data using wavelet transforms for noise reduction and improved signal clarity.
-- **Gap Analysis**: Identifies gaps between consecutive bars for anomaly detection or trading strategies.
-- **Null Handling**: Fills missing values with forward-fill or back-fill techniques for consistent datasets.
+### 4. **Data Enrichment**
+- **Pivot Levels**: Adds standard, Fibonacci, Camarilla, Woodie, and Demark pivot levels
+- **Meta Information**: Enriches data with metadata such as day, month, hour, minute
+- **Support and Resistance Levels**: Calculates key levels based on rolling windows
 
-### 5. **Trading and Order Management**
-- **Order Placement**: Simplifies placing market, limit, and stop orders with MetaTrader 5.
-- **Position Management**: Easily fetch and manage open positions and orders for active trading.
-- **Trade Execution**: Supports position closing and ensures robust order sending mechanisms.
+### 5. **Advanced Filtering and Smoothing**
+- **Wavelet Denoising**: Smoothens data using wavelet transforms
+- **Gap Analysis**: Identifies gaps between consecutive bars
+- **Null Handling**: Fills missing values with forward-fill or back-fill techniques
 
-### 6. **Reproducibility and Workflow Integration**
-- **Replicable Settings**: Define retrieval settings to ensure consistency between training and inference datasets.
-- **Multi-Instrument Aggregation**: Combines data from multiple instruments into a unified dataset, ensuring consistency in multi-asset analysis.
+### 6. **Trading and Order Management**
+- **Order Placement**: Simplifies placing market, limit, and stop orders
+- **Position Management**: Easily fetch and manage open positions and orders
+- **Trade Execution**: Supports position closing and ensures robust order sending
 
-## Example Use Cases
-- **ML Pipeline**: Use `mt5gw` to fetch, preprocess, and enrich financial data for training predictive models.
-- **Quantitative Analysis**: Perform detailed technical analysis using enriched data and advanced indicators.
-- **Automated Trading**: Develop and backtest trading strategies with the included trading and order management features.
+## API Endpoints
+
+### Market Data
+- `GET /api/v1/symbols` - Get all available trading symbols
+- `GET /api/v1/timeframes` - Get supported timeframes
+- `GET /api/v1/symbol/{symbol}` - Get detailed symbol information
+- `GET /api/v1/tick/{symbol}` - Get latest tick data
+- `POST /api/v1/data` - Fetch market data with indicators
+
+### Trading
+- `GET /api/v1/orders/{symbol}` - Get orders for a symbol
+- `GET /api/v1/positions` - Get all open positions
+- `POST /api/v1/order` - Place a new order
+- `DELETE /api/v1/position/{ticket}` - Close a position
 
 ## Documentation
-- [Data Retrieval Configuration](docs/configuration/data_retrieval.md): Detailed guide on configuring data retrieval parameters
-- [Example Usage](tests/example_usage.py): Comprehensive examples demonstrating various features
-- [Sample Configuration](samples/sample_retrieval.json): Reference configuration with common settings
+- [Data Retrieval Configuration](docs/configuration/data_retrieval.md)
+- [Example Usage](tests/example_usage.py)
+- [Sample Configuration](samples/sample_retrieval.json)
+- API Documentation (available at `/docs` when server is running)
 
 ## Troubleshooting
 
@@ -100,14 +158,14 @@ df = mt.fetch(
    - Install required dependencies: `pip install ta-lib pandas-ta tulipy`
    - For TA-Lib on Windows, use: `pip install TA-Lib-binary`
 
-3. **Data Quality Issues**
-   - Verify symbol availability during the requested timeframe
-   - Check for sufficient historical data in MT5
-   - Ensure proper market hours for the requested instrument
+3. **API Server Issues**
+   - Verify MetaTrader 5 is running before starting the API server
+   - Check if the port is available and not blocked by firewall
+   - Ensure all dependencies are installed: `pip install -e .`
 
 ## Contributing
 Contributions are welcome! Please feel free to submit a Pull Request.
 
 ---
 
-With its robust data management and analysis capabilities, `mt5gw` bridges the gap between MetaTrader 5 and cutting-edge machine learning workflows.
+With its robust data management, analysis capabilities, and REST API integration, `mt5gw` bridges the gap between MetaTrader 5 and modern development workflows.
