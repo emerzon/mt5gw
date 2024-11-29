@@ -9,7 +9,7 @@
 pip install mt5gw
 
 # Or install from source
-git clone https://github.com/yourusername/mt5gw.git
+git clone https://github.com/emerzon/mt5gw.git
 cd mt5gw
 pip install -e .
 ```
