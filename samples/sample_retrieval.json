@@ -1,0 +1,127 @@
+{
+   "bars": 30000, 
+  "fill_empty_ranges": false,
+  "talib_candle_patterns": false,
+  "taf_all": false,
+  "ta_all": true,
+  "add_gap": false,
+  "add_price_summaries": true,
+  "add_meta_dates": true,
+  "add_year": false,
+  "denoise_data": true,
+  "sr_levels": [],
+  "pivot_levels": 4,
+  "lookbacks": [
+    {
+      "field": "close",
+      "periods": [1, 2, 3, 5, 7, 14, 21, 35, 56, 91, 147, 238, 385, 623],
+      "ratio": true
+    },
+    {
+      "field": "volume",
+      "periods": [1, 2, 3, 5, 7, 14, 21, 35, 56, 91, 147, 238, 385, 623],
+      "ratio": true
+    },
+    {
+      "field": "stddev",
+      "periods": [1, 2, 3, 5, 7, 14, 21, 35, 56, 91, 147, 238, 385, 623],
+      "ratio": false
+    },
+    {
+      "field": "twap",
+      "periods": [1, 2, 3, 5, 7, 14, 21, 35, 56, 91, 147, 238, 385, 623],
+      "ratio": true
+    },
+    {
+      "field": "trend_cci",
+      "periods": [1, 2, 3, 5, 7, 14, 21, 35, 56, 91, 147, 238, 385, 623],
+      "ratio": false
+    }
+  ],
+  "mas": [
+    {
+      "method": "sma",
+      "field": "close",
+      "periods": [7, 14, 21, 35, 56, 91, 200, 500]
+    },
+    {
+      "method": "sma",
+      "field": "volume",
+      "periods": [7, 14, 21, 35, 56, 91, 200, 500]
+    },
+    {
+      "method": "ema",
+      "field": "close",
+      "periods": [7, 14, 21, 35, 56, 91, 200, 500]
+    },
+    {
+      "method": "ema",
+      "field": "volume",
+      "periods": [7, 14, 21, 35, 56, 91, 200, 500]
+    }
+  ],
+  "talib_indicators": [
+    {
+      "method": "STOCHRSI",
+      "args": ["c"],
+      "kwargs": {
+        "timeperiod": 14,
+        "fastk_period": 5,
+        "fastd_period": 3,
+        "fastd_matype": 0
+      }
+    },
+    {"method": "LINEARREG", "args": ["c"], "kwargs": {"timeperiod": 7}},
+    {"method": "LINEARREG_ANGLE", "args": ["c"], "kwargs": {"timeperiod": 7}},
+    {
+      "method": "LINEARREG_INTERCEPT",
+      "args": ["c"],
+      "kwargs": {"timeperiod": 7}
+    },
+    {"method": "LINEARREG_SLOPE", "args": ["c"], "kwargs": {"timeperiod": 14}},
+    {"method": "BETA", "args": ["h", "l"], "kwargs": {"timeperiod": 7}},
+    {"method": "VAR", "args": ["c"], "kwargs": {"timeperiod": 5, "nbdev": 1}},
+    {"method": "ROCR", "args": ["c"]},
+    {
+      "method": "STDDEV",
+      "args": ["c"],
+      "kwargs": {"timeperiod": 7, "nbdev": 1}
+    },
+    {"method": "HT_TRENDLINE", "args": ["c"]},
+    {"method": "HT_DCPERIOD", "args": ["c"]},
+    {"method": "HT_DCPHASE", "args": ["c"]},
+    {"method": "HT_PHASOR", "args": ["c"]},
+    {"method": "HT_SINE", "args": ["c"]},
+    {"method": "HT_TRENDMODE", "args": ["c"]},
+    {"method": "ULTOSC", "args": ["h", "l", "c"]},
+    {"method": "WILLR", "args": ["h", "l", "c"], "kwargs": {"timeperiod": 14}}
+  ],
+  "tulip_indicators": [],
+  "native_indicators": [    
+    {"method": "supertrend", "args": ["h", "l", "c"]},
+    {"method": "twap", "args": ["o", "h", "l", "c"]},
+    {"method": "pov", "args": ["c", "v"]},
+    {"method": "rsl", "args": ["c"]},
+    {"method": "ehlers_rpi", "args": ["h", "l", "v"]},
+    {"method": "ultra_wpr", "args": ["h", "l", "c"]},
+    {"method": "ultra_rsi", "args": ["c"]}
+  ],
+  "pandasta_indicators": [
+    {"method": "entropy", "args": ["c"]},
+    {"method": "mcgd", "args": ["c"]},
+    {"method": "ebsw", "args": ["c"]},
+    {"method": "vhf", "args": ["c"]},
+    {"method": "qstick", "args": ["o", "c"]},
+    {"method": "brar", "args": ["o", "h", "l", "c"]},
+    {"method": "coppock", "args": ["c"]},
+    {"method": "sinwma", "args": ["c"]},
+    {"method": "massi", "args": ["h","l"]},
+    {"method": "hwc", "args": ["c"]},
+    {"method": "thermo", "args": ["h","l"]},
+    {"method": "accbands", "args": ["h","l", "c"]},
+    {"method": "chop", "args": ["h","l", "c"]},
+    {"method": "adosc", "args": ["h","l", "c","v"]},
+    {"method": "rvi", "args": ["h", "l", "c"]}
+  ],
+  "provide_open_bar": false
+}
