@@ -1,5 +1,5 @@
 {
-   "bars": 30000, 
+  "bars": 30000,
   "fill_empty_ranges": false,
   "talib_candle_patterns": false,
   "taf_all": false,
@@ -71,30 +71,78 @@
         "fastd_matype": 0
       }
     },
-    {"method": "LINEARREG", "args": ["c"], "kwargs": {"timeperiod": 7}},
-    {"method": "LINEARREG_ANGLE", "args": ["c"], "kwargs": {"timeperiod": 7}},
+    {
+      "method": "LINEARREG",
+      "args": ["c"],
+      "kwargs": {"timeperiod": 7}
+    },
+    {
+      "method": "LINEARREG_ANGLE",
+      "args": ["c"],
+      "kwargs": {"timeperiod": 7}
+    },
     {
       "method": "LINEARREG_INTERCEPT",
       "args": ["c"],
       "kwargs": {"timeperiod": 7}
     },
-    {"method": "LINEARREG_SLOPE", "args": ["c"], "kwargs": {"timeperiod": 14}},
-    {"method": "BETA", "args": ["h", "l"], "kwargs": {"timeperiod": 7}},
-    {"method": "VAR", "args": ["c"], "kwargs": {"timeperiod": 5, "nbdev": 1}},
-    {"method": "ROCR", "args": ["c"]},
+    {
+      "method": "LINEARREG_SLOPE",
+      "args": ["c"],
+      "kwargs": {"timeperiod": 14}
+    },
+    {
+      "method": "BETA",
+      "args": ["h", "l"],
+      "kwargs": {"timeperiod": 7}
+    },
+    {
+      "method": "VAR",
+      "args": ["c"],
+      "kwargs": {"timeperiod": 5, "nbdev": 1}
+    },
+    {
+      "method": "ROCR",
+      "args": ["c"]
+    },
     {
       "method": "STDDEV",
       "args": ["c"],
       "kwargs": {"timeperiod": 7, "nbdev": 1}
     },
-    {"method": "HT_TRENDLINE", "args": ["c"]},
-    {"method": "HT_DCPERIOD", "args": ["c"]},
-    {"method": "HT_DCPHASE", "args": ["c"]},
-    {"method": "HT_PHASOR", "args": ["c"]},
-    {"method": "HT_SINE", "args": ["c"]},
-    {"method": "HT_TRENDMODE", "args": ["c"]},
-    {"method": "ULTOSC", "args": ["h", "l", "c"]},
-    {"method": "WILLR", "args": ["h", "l", "c"], "kwargs": {"timeperiod": 14}}
+    {
+      "method": "HT_TRENDLINE",
+      "args": ["c"]
+    },
+    {
+      "method": "HT_DCPERIOD",
+      "args": ["c"]
+    },
+    {
+      "method": "HT_DCPHASE",
+      "args": ["c"]
+    },
+    {
+      "method": "HT_PHASOR",
+      "args": ["c"]
+    },
+    {
+      "method": "HT_SINE",
+      "args": ["c"]
+    },
+    {
+      "method": "HT_TRENDMODE",
+      "args": ["c"]
+    },
+    {
+      "method": "ULTOSC",
+      "args": ["h", "l", "c"]
+    },
+    {
+      "method": "WILLR",
+      "args": ["h", "l", "c"],
+      "kwargs": {"timeperiod": 14}
+    }
   ],
   "tulip_indicators": [],
   "native_indicators": [    
