@@ -3,10 +3,10 @@ from setuptools import setup, find_packages
 setup(
     name="mt5gw",
     version="0.1.0",
-    description="MetaTrader 5 Gateway for ML Applications",
+    description="MetaTrader 5 Gateway",
     long_description=open('README.md').read(),
     long_description_content_type="text/markdown",
-    author="MT5GW Team",
+    author="Emerson Gomes",
     packages=find_packages(),
     install_requires=[
         'MetaTrader5>=5.0.0',
@@ -21,7 +21,7 @@ setup(
     ],
     python_requires='>=3.7',
     classifiers=[
-        'Development Status :: 4 - Beta',
+        'Development Status :: 3 - Alpha',
         'Intended Audience :: Financial and Insurance Industry',
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 3',
