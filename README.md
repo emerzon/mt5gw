@@ -5,10 +5,7 @@
 ## Installation
 
 ```bash
-# Install from PyPI
-pip install mt5gw
-
-# Or install from source
+# Install from source
 git clone https://github.com/emerzon/mt5gw.git
 cd mt5gw
 pip install -e .
