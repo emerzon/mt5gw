@@ -79,9 +79,6 @@ def main():
     print("\n=== Example 2: Data Retrieval ===")
     timeframes = mt.get_supported_timeframes()
     print(f"Supported timeframes: {timeframes}")
-    print("\nTimeframe descriptions:")
-    for tf in timeframes:
-        print(f"- {tf}: {mt.get_timeframe_description(tf)}")
 
     try:
         # Fetch last 100 bars of EURUSD with 1-hour timeframe
@@ -93,13 +90,6 @@ def main():
             add_meta_dates=True  # Adds hour, day, month information
         )
         print_dataframe_sample(df, "EURUSD 1H Data Sample")
-        
-        # Explain the meta date columns
-        print("\nMeta Date Columns Explanation:")
-        print("- hour: Hour of the day (0-23)")
-        print("- day: Day of the month (1-31)")
-        print("- month: Month of the year (1-12)")
-        print("- weekday: Day of the week (0-6, Monday=0)")
 
     except Exception as e:
         print(f"Error fetching data: {e}")
@@ -177,7 +167,7 @@ def main():
             instrument="EURUSD",
             timeframe="1h",
             bars=400,
-            denoise_data=False
+            denoise_data=None
         )
 
         # Data with wavelet denoising applied
@@ -187,13 +177,13 @@ def main():
             bars=400,
             denoise_data={
                 "wavelet": "sym15",  # Symlet wavelet family
-                "level": 1           # Decomposition level
+                "level": 1,           # Decomposition level
             }
         )
 
         # Compare original vs denoised close prices
         print_dataframe_sample(df[["close"]], "Original Close Prices")
-        print_dataframe_sample(denoised_df[["close"]], "Denoised Close Prices")
+        print_dataframe_sample(denoised_df[["denoised_close"]], "Denoised Close Prices")
         
         print("\nWavelet Denoising Explanation:")
         print("- Purpose: Remove market noise while preserving important price movements")

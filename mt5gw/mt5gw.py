@@ -56,6 +56,10 @@ class MetaTraderManager:
     def get_supported_timeframes(self):
         return list(self.tfs.keys())
 
+    def get_market_book(self, symbol):
+        self.mt5.initialize()
+        return self.mt5.market_book_get(symbol)
+
     def get_mt5_timeframe(self, tf):
         return self.tfs.get(tf, None)
 
@@ -117,6 +121,8 @@ class MetaTraderManager:
             print(result)
 
         return result
+
+       
 
     def close_position(self, ticket):
         self.mt5.initialize()
@@ -237,16 +243,132 @@ class MetaTraderManager:
         reconstructed = pywt.waverec(coeff, wavelet)[:len(data)]
         return pd.Series(reconstructed, index=data.index)
 
-    def denoise_dataframe(self, df, wavelet='rbio2.8', level=2, apply_columns=[], preserve_col_names=False):
-        if len(apply_columns) < 1:
+    def ssa_denoising(self, data, window_length, n_components):
+        try:
+            from pyssa import SSA
+        except ImportError:
+            raise ImportError("pyssa package is required for SSA denoising")
+        
+        """
+        Apply Singular Spectrum Analysis (SSA) denoising to the input time series.
+
+        Parameters:
+        - data (pd.Series): Input time series data to denoise.
+        - window_length (int): The window length for SSA decomposition.
+        - n_components (int): Number of SSA components to retain for reconstruction.
+
+        Returns:
+        - pd.Series: Denoised time series with the same index as the input.
+        """
+        ssa = SSA(data.values, window_length)
+        ssa.fit()
+        reconstructed = ssa.reconstruct(n_components)
+        return pd.Series(reconstructed, index=data.index)
+
+    def emd_denoising(self, data, n_imfs_to_remove):
+        try:
+            from PyEMD import EMD
+        except ImportError:
+            raise ImportError("PyEMD package is required for EMD denoising")
+        
+        """
+        Apply Empirical Mode Decomposition (EMD) denoising to the input time series.
+
+        Parameters:
+        - data (pd.Series): Input time series data to denoise.
+        - n_imfs_to_remove (int): Number of high-frequency IMFs to remove.
+
+        Returns:
+        - pd.Series: Denoised time series with the same index as the input.
+        """
+        emd = EMD()
+        imfs = emd(data.values)
+        reconstructed = imfs[n_imfs_to_remove:].sum(axis=0)
+        return pd.Series(reconstructed, index=data.index)
+
+
+    def kalman_denoising(self, data, transition_matrices=1, observation_matrices=1, 
+                            transition_covariance=1e-4, observation_covariance=1, 
+                            initial_state_mean=0, initial_state_covariance=1):
+            
+            try:
+                from pykalman import KalmanFilter
+            except ImportError:
+                raise ImportError("pykalman package is required for Kalman filter denoising")
+            
+            """
+            Apply Kalman filter denoising to the input time series data.
+
+            Parameters:
+            - data (pd.Series): Input time series data to denoise.
+            - transition_matrices (float): Transition matrix for the state equation (default: 1 for local level model).
+            - observation_matrices (float): Observation matrix (default: 1 for direct observation).
+            - transition_covariance (float): Covariance of process noise (default: 1e-4).
+            - observation_covariance (float): Covariance of observation noise (default: 1).
+            - initial_state_mean (float): Initial state mean (default: 0).
+            - initial_state_covariance (float): Initial state covariance (default: 1).
+
+            Returns:
+            - pd.Series: Denoised time series with the same index as the input.
+            """
+            kf = KalmanFilter(
+                transition_matrices=transition_matrices,
+                observation_matrices=observation_matrices,
+                transition_covariance=transition_covariance,
+                observation_covariance=observation_covariance,
+                initial_state_mean=initial_state_mean,
+                initial_state_covariance=initial_state_covariance
+            )
+            state_means, _ = kf.filter(data.values)
+            return pd.Series(state_means.flatten(), index=data.index)
+
+    def denoise_dataframe(self, df, denoise_func=None, method='wavelet', wavelet='rbio2.8', 
+                          level=2, kalman_params={}, ssa_params={}, emd_params={}, 
+                          apply_columns=[], preserve_col_names=False):
+        """
+        Apply denoising to specified columns of the DataFrame using the selected method.
+
+        Parameters:
+        - df (pd.DataFrame): Input DataFrame to denoise.
+        - denoise_func (callable, optional): Custom denoising function (takes pd.Series, returns pd.Series).
+        - method (str): Denoising method ('wavelet', 'kalman', 'ssa', 'emd'; default: 'wavelet').
+        - wavelet (str): Wavelet type for wavelet denoising (default: 'rbio2.8').
+        - level (int): Decomposition level for wavelet denoising (default: 2).
+        - kalman_params (dict): Parameters for Kalman filter denoising.
+        - ssa_params (dict): Parameters for SSA denoising (e.g., {'window_length': 20, 'n_components': 5}).
+        - emd_params (dict): Parameters for EMD denoising (e.g., {'n_imfs_to_remove': 1}).
+        - apply_columns (list): Columns to denoise; if empty, applies to all numeric columns.
+        - preserve_col_names (bool): If False, adds 'denoised_' prefix; if True, overwrites original columns.
+
+        Returns:
+        - pd.DataFrame: DataFrame with denoised columns.
+        """
+        if not apply_columns:
             apply_columns = df.columns
+        
         for column in apply_columns:
             if pd.api.types.is_numeric_dtype(df[column]):
-                new_column_name = f"denoised_{column}" if preserve_col_names else column
-                df[new_column_name] = self.wavelet_denoising(
-                    df[column].dropna(), wavelet, level)
+                new_column_name = f"denoised_{column}" if not preserve_col_names else column
+                data = df[column].dropna()
+                
+                if denoise_func is not None:
+                    df[new_column_name] = denoise_func(data)
+                elif method == 'wavelet':
+                    df[new_column_name] = self.wavelet_denoising(data, wavelet, level)
+                elif method == 'kalman':
+                    df[new_column_name] = self.kalman_denoising(data, **kalman_params)
+                elif method == 'ssa':
+                    window_length = ssa_params.get('window_length', 20)
+                    n_components = ssa_params.get('n_components', 5)
+                    df[new_column_name] = self.ssa_denoising(data, window_length, n_components)
+                elif method == 'emd':
+                    n_imfs_to_remove = emd_params.get('n_imfs_to_remove', 1)
+                    df[new_column_name] = self.emd_denoising(data, n_imfs_to_remove)
+                else:
+                    raise ValueError(f"Unsupported denoising method: {method}")
+        
         return df
-
+   
     def add_indicators(self, library, indicators, rf, silent=False):
         suffix_counter = {}
         now = datetime.datetime.now()
@@ -432,11 +554,23 @@ class MetaTraderManager:
             rf = self.add_pivot_levels(df=rf, num_levels=pivot_levels)
 
         if denoise_data is not None:
-            if not isinstance(denoise_data, dict):
-                denoise_data = {}
-            wavelet = denoise_data.get("wavelet", "sym15")
-            level = denoise_data.get("level", 2)
-            rf = self.denoise_dataframe(rf, wavelet=wavelet, level=level)
+            denoise_func = denoise_data.get('func', None)
+            method = denoise_data.get('method', 'wavelet')
+            wavelet = denoise_data.get('wavelet', 'rbio2.8')
+            level = denoise_data.get('level', 2)
+            kalman_params = denoise_data.get('kalman_params', {})
+            ssa_params = denoise_data.get('ssa_params', {})
+            emd_params = denoise_data.get('emd_params', {})
+            rf = self.denoise_dataframe(
+                rf,
+                denoise_func=denoise_func,
+                method=method,
+                wavelet=wavelet,
+                level=level,
+                kalman_params=kalman_params,
+                ssa_params=ssa_params,
+                emd_params=emd_params
+            )
 
         if add_price_summaries:
             rf['avgPrice'] = rf[['low', 'high']].mean(axis=1)
