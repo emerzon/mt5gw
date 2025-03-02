@@ -10,6 +10,7 @@ import talib
 import pandas_ta
 import tulipy
 from . import mtds_ni
+from . import mySSA
 from warnings import simplefilter
 
 # Ignore warnings
@@ -52,6 +53,11 @@ class MetaTraderManager:
     def get_all_symbols(self):
         self.mt5.initialize()
         return self.mt5.symbols_get()
+
+    def get_all_symbols_list(self):
+        self.mt5.initialize()
+        symbols = self.mt5.symbols_get()
+        return [symbol.name for symbol in symbols]
 
     def get_supported_timeframes(self):
         return list(self.tfs.keys())
@@ -243,33 +249,56 @@ class MetaTraderManager:
         reconstructed = pywt.waverec(coeff, wavelet)[:len(data)]
         return pd.Series(reconstructed, index=data.index)
 
-    def ssa_denoising(self, data, window_length, n_components):
-        try:
-            from pyssa import SSA
-        except ImportError:
-            raise ImportError("pyssa package is required for SSA denoising")
-        
+    def ssa_denoising(self, data, window_length=20, n_components=5):
         """
-        Apply Singular Spectrum Analysis (SSA) denoising to the input time series.
+        Apply Singular Spectrum Analysis (SSA) denoising to the input time series using mySSA.
 
         Parameters:
         - data (pd.Series): Input time series data to denoise.
-        - window_length (int): The window length for SSA decomposition.
-        - n_components (int): Number of SSA components to retain for reconstruction.
+        - window_length (int): The window length (embedding dimension) for SSA decomposition (default: 20).
+        - n_components (int): Number of SSA components to retain for reconstruction (default: 5).
 
         Returns:
         - pd.Series: Denoised time series with the same index as the input.
         """
-        ssa = SSA(data.values, window_length)
-        ssa.fit()
-        reconstructed = ssa.reconstruct(n_components)
-        return pd.Series(reconstructed, index=data.index)
+        # Ensure data is a pandas Series with a numeric index
+        if not isinstance(data, pd.Series):
+            data = pd.Series(data)
+        
+        # Create an instance of mySSA with the time series data
+        ssa = mySSA(data.values)
+        
+        # Embed the time series with the specified window length
+        ssa.embed(embedding_dimension=window_length, verbose=False)
+        
+        # Decompose the embedded series to get singular values and components
+        ssa.decompose(verbose=False)
+        
+        # Reconstruct the series using only the top n_components to filter noise
+        # mySSA stores components in self.Xs as dictionaries indexed by component number
+        reconstructed_data = np.zeros_like(data.values)
+        components = list(ssa.Xs.keys())[:n_components]  # Use the top n_components
+        for i in components:
+            reconstructed_data += ssa.Xs[i].A.flatten()  # Access the numpy array and flatten
+        
+        # Perform diagonal averaging to reconstruct the time series
+        # Use mySSA's diagonal_averaging method directly on the reconstructed matrix
+        hankel_matrix = np.zeros((window_length, len(data) - window_length + 1))
+        for i in range(window_length):
+            hankel_matrix[i, :] = reconstructed_data[i:i + len(data) - window_length + 1]
+        denoised_values = mySSA.diagonal_averaging(hankel_matrix).values.flatten()
+        
+        # Ensure the length matches the input data (pad or trim if necessary)
+        if len(denoised_values) < len(data):
+            denoised_values = np.pad(denoised_values, (0, len(data) - len(denoised_values)), mode='edge')
+        elif len(denoised_values) > len(data):
+            denoised_values = denoised_values[:len(data)]
+        
+        # Return as a pandas Series with the original index
+        return pd.Series(denoised_values, index=data.index)
 
     def emd_denoising(self, data, n_imfs_to_remove):
-        try:
-            from PyEMD import EMD
-        except ImportError:
-            raise ImportError("PyEMD package is required for EMD denoising")
+        from PyEMD import EMD
         
         """
         Apply Empirical Mode Decomposition (EMD) denoising to the input time series.
@@ -451,7 +480,7 @@ class MetaTraderManager:
               date_from=None, date_to=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
               mas=[], lookbacks=[], native_indicators=[], ta_indicators=[],
               pandasta_indicators=[], talib_indicators=[], talib_candle_patterns=False,
-              ta_all=False, taf_all=False, tulip_indicators=[], denoise_data=None,
+              ta_all=False, taf_all=False, tulip_indicators=[], denoise_data={},
               add_meta_dates=False, add_year=False, add_price_summaries=True,
               add_gap=False, sr_levels=[], sr_fields=["close"], pivot_levels=0,
               fill_empty_ranges=False, provide_open_bar=True, drop_na=True,
@@ -563,7 +592,7 @@ class MetaTraderManager:
         if pivot_levels > 0:
             rf = self.add_pivot_levels(df=rf, num_levels=pivot_levels)
 
-        if denoise_data is not None:
+        if denoise_data is not None and type(denoise_data) == dict:
             denoise_func = denoise_data.get('func', None)
             method = denoise_data.get('method', 'wavelet')
             wavelet = denoise_data.get('wavelet', 'rbio2.8')

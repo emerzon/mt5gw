@@ -36,7 +36,10 @@
                         <div class="control-group">
                             <div class="control-item">
                                 <label for="instrument"><i class="fas fa-tag"></i> Instrument</label>
-                                <input type="text" id="instrument" value="EURUSD">
+                                <input type="text" id="instrument" list="instrument-list" class="styled-input">
+                                <datalist id="instrument-list">
+                                    <!-- Options will be populated by JavaScript -->
+                                </datalist>
                             </div>
                             
                             <div class="control-item">
@@ -56,53 +59,10 @@
                         
                         <div class="control-group">
                             <div class="control-item">
-                                <label for="date_range"><i class="fas fa-calendar-alt"></i> Date Range</label>
-                                <select id="date_range" class="styled-select">
-                                    <option value="1d">Last Day</option>
-                                    <option value="7d" selected>Last Week</option>
-                                    <option value="30d">Last Month</option>
-                                    <option value="90d">Last Quarter</option>
-                                    <option value="custom">Custom Range</option>
-                                </select>
-                            </div>
-                        </div>
-                        
-                        <div id="custom_date_range" class="control-group" style="display: none;">
-                            <div class="control-item">
-                                <label for="date_from"><i class="fas fa-calendar-minus"></i> From</label>
-                                <input type="datetime-local" id="date_from" class="styled-input">
-                            </div>
-                            
-                            <div class="control-item">
-                                <label for="date_to"><i class="fas fa-calendar-plus"></i> To</label>
-                                <input type="datetime-local" id="date_to" class="styled-input">
-                            </div>
-                        </div>
-                        
-                        <div class="control-group">
-                            <div class="control-item">
-                                <label><i class="fas fa-chart-bar"></i> Technical Indicators</label>
-                                <div class="checkbox-group">
-                                    <label class="checkbox-container">
-                                        <input type="checkbox" id="sma" value="sma">
-                                        <span class="checkmark"></span>
-                                        <span>SMA</span>
-                                    </label>
-                                    <label class="checkbox-container">
-                                        <input type="checkbox" id="rsi" value="rsi">
-                                        <span class="checkmark"></span>
-                                        <span>RSI</span>
-                                    </label>
-                                    <label class="checkbox-container">
-                                        <input type="checkbox" id="macd" value="macd">
-                                        <span class="checkmark"></span>
-                                        <span>MACD</span>
-                                    </label>
-                                    <label class="checkbox-container">
-                                        <input type="checkbox" id="bbands" value="bbands">
-                                        <span class="checkmark"></span>
-                                        <span>Bollinger</span>
-                                    </label>
+                                <label for="num_candles"><i class="fas fa-chart-bar"></i> Number of Candles</label>
+                                <div class="range-container">
+                                    <input type="range" id="num_candles" min="50" max="5000" step="50" value="500" class="styled-range">
+                                    <span id="num_candles_value">500</span>
                                 </div>
                             </div>
                         </div>
@@ -112,25 +72,105 @@
                                 <label><i class="fas fa-filter"></i> Denoising Methods</label>
                                 <div class="checkbox-group">
                                     <label class="checkbox-container">
-                                        <input type="checkbox" id="wavelet" value="wavelet">
+                                        <input type="checkbox" id="wavelet" value="wavelet" class="denoise-method">
                                         <span class="checkmark"></span>
                                         <span>Wavelet</span>
                                     </label>
                                     <label class="checkbox-container">
-                                        <input type="checkbox" id="kalman" value="kalman">
+                                        <input type="checkbox" id="kalman" value="kalman" class="denoise-method">
                                         <span class="checkmark"></span>
                                         <span>Kalman</span>
                                     </label>
                                     <label class="checkbox-container">
-                                        <input type="checkbox" id="ssa" value="ssa">
+                                        <input type="checkbox" id="ssa" value="ssa" class="denoise-method">
                                         <span class="checkmark"></span>
                                         <span>SSA</span>
                                     </label>
                                     <label class="checkbox-container">
-                                        <input type="checkbox" id="emd" value="emd">
+                                        <input type="checkbox" id="emd" value="emd" class="denoise-method">
                                         <span class="checkmark"></span>
                                         <span>EMD</span>
                                     </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Denoising Settings Submenu - Initially Hidden -->
+                        <div id="denoising-settings" class="control-group" style="display: none;">
+                            <div class="control-item">
+                                <label><i class="fas fa-sliders-h"></i> Denoising Settings</label>
+                                
+                                <!-- Wavelet Settings -->
+                                <div id="wavelet-settings" class="denoise-settings" style="display: none;">
+                                    <div class="control-item">
+                                        <label for="wavelet-level">Decomposition Level</label>
+                                        <select id="wavelet-level" class="styled-select">
+                                            <option value="1">1</option>
+                                            <option value="2" selected>2</option>
+                                            <option value="3">3</option>
+                                            <option value="4">4</option>
+                                            <option value="5">5</option>
+                                        </select>
+                                    </div>
+                                    <div class="control-item">
+                                        <label for="wavelet-type">Wavelet Type</label>
+                                        <select id="wavelet-type" class="styled-select">
+                                            <option value="db4" selected>Daubechies 4</option>
+                                            <option value="db8">Daubechies 8</option>
+                                            <option value="sym4">Symlet 4</option>
+                                            <option value="haar">Haar</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <!-- Kalman Settings -->
+                                <div id="kalman-settings" class="denoise-settings" style="display: none;">
+                                    <div class="control-item">
+                                        <label for="kalman-q">Process Noise (Q)</label>
+                                        <input type="range" id="kalman-q" min="0.001" max="0.1" step="0.001" value="0.01" class="styled-range">
+                                        <span id="kalman-q-value">0.01</span>
+                                    </div>
+                                    <div class="control-item">
+                                        <label for="kalman-r">Measurement Noise (R)</label>
+                                        <input type="range" id="kalman-r" min="0.1" max="10" step="0.1" value="1.0" class="styled-range">
+                                        <span id="kalman-r-value">1.0</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- SSA Settings -->
+                                <div id="ssa-settings" class="denoise-settings" style="display: none;">
+                                    <div class="control-item">
+                                        <label for="ssa-window">Window Length</label>
+                                        <select id="ssa-window" class="styled-select">
+                                            <option value="10">10</option>
+                                            <option value="20" selected>20</option>
+                                            <option value="30">30</option>
+                                            <option value="40">40</option>
+                                        </select>
+                                    </div>
+                                    <div class="control-item">
+                                        <label for="ssa-groups">Number of Groups</label>
+                                        <select id="ssa-groups" class="styled-select">
+                                            <option value="1">1</option>
+                                            <option value="2" selected>2</option>
+                                            <option value="3">3</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <!-- EMD Settings -->
+                                <div id="emd-settings" class="denoise-settings" style="display: none;">
+                                    <div class="control-item">
+                                        <label for="emd-imfs">IMFs to Remove
+                                            <span class="tooltip-icon" title="Select the number of Intrinsic Mode Functions (IMFs) to remove, starting from the highest frequency. For example, selecting '2' will remove the first two IMFs."><i class="fas fa-question-circle"></i></span>
+                                        </label>
+                                        <select id="emd-imfs" class="styled-select">
+                                            <option value="1">1</option>
+                                            <option value="2" selected>2</option>
+                                            <option value="3">3</option>
+                                            <option value="4">4</option>
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
                         </div>

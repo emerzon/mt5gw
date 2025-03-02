@@ -1,3 +1,54 @@
+// Function to load instruments from localStorage
+function loadInstruments() {
+    console.log('Loading instruments from /symbols');
+    fetch('/symbols')
+        .then(response => response.json())
+        .then(symbols => {
+            console.log('Symbols received:', symbols);
+
+            const datalist = document.getElementById('instrument-list');
+
+            // Clear existing options
+            datalist.innerHTML = '';
+
+            // Add options to datalist
+            symbols.forEach(symbol => {
+                const option = document.createElement('option');
+                option.value = symbol;
+                datalist.appendChild(option);
+                console.log('Added option:', symbol);
+            });
+
+            // Load the last used instrument, timeframe, and number of candles from localStorage
+            const storedInstrument = localStorage.getItem('lastUsedInstrument');
+            const storedTimeframe = localStorage.getItem('lastUsedTimeframe');
+            const storedNumCandles = localStorage.getItem('lastUsedNumCandles');
+
+            if (storedInstrument) {
+                console.log('Loading last used instrument from localStorage:', storedInstrument);
+                document.getElementById('instrument').value = storedInstrument;
+            } else if (symbols.length > 0) {
+                // Set the first symbol as the default value if no instrument is stored
+                const firstSymbol = symbols[0];
+                console.log('Setting default instrument to:', firstSymbol);
+                document.getElementById('instrument').value = firstSymbol;
+            }
+
+            if (storedTimeframe) {
+                console.log('Loading last used timeframe from localStorage:', storedTimeframe);
+                document.getElementById('timeframe').value = storedTimeframe;
+            }
+
+            if (storedNumCandles) {
+                console.log('Loading last used numCandles from localStorage:', storedNumCandles);
+                document.getElementById('num_candles').value = storedNumCandles;
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching symbols:', error);
+        });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // Log Chart.js loading status
     console.log('Chart.js loaded:', typeof Chart !== 'undefined');
@@ -5,18 +56,80 @@ document.addEventListener('DOMContentLoaded', function() {
     if (typeof Chart === 'undefined') {
         console.error('Chart.js is not loaded correctly.');
     }
+    
+    // Load instruments from localStorage
+    loadInstruments();
+    
+    // Add click event listener to instrument input to select all text when clicked
+    const instrumentInput = document.getElementById('instrument');
+
+    instrumentInput.addEventListener('focus', function() {
+        this.select();
+    });
+
+    instrumentInput.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter') {
+            const datalist = document.getElementById('instrument-list');
+            if (datalist.options.length > 0) {
+                this.value = datalist.options[0].value;
+                event.preventDefault(); // Prevent form submission
+            }
+        }
+    });
+
+    // Add event listeners for denoising method checkboxes
+    const denoiseCheckboxes = document.querySelectorAll('.denoise-method');
+    denoiseCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateDenoiseSettings);
+    });
+    
+    // Initialize range input displays
+    document.getElementById('kalman-q').addEventListener('input', function() {
+        document.getElementById('kalman-q-value').textContent = this.value;
+    });
+    
+    document.getElementById('kalman-r').addEventListener('input', function() {
+        document.getElementById('kalman-r-value').textContent = this.value;
+    });
+    
+    // Initialize number of candles slider display
+    document.getElementById('num_candles').addEventListener('input', function() {
+        document.getElementById('num_candles_value').textContent = this.value;
+    });
+    
+    // Initialize denoising settings visibility
+    updateDenoiseSettings();
 });
 
 let ohlcChart, volumeChart;
 
-document.getElementById('date_range').addEventListener('change', function() {
-    const customDateRange = document.getElementById('custom_date_range');
-    if (this.value === 'custom') {
-        customDateRange.style.display = 'block';
+// Function to update denoising settings visibility
+function updateDenoiseSettings() {
+    const denoiseSettings = document.getElementById('denoising-settings');
+    const waveletSettings = document.getElementById('wavelet-settings');
+    const kalmanSettings = document.getElementById('kalman-settings');
+    const ssaSettings = document.getElementById('ssa-settings');
+    const emdSettings = document.getElementById('emd-settings');
+    
+    // Check if any denoising method is selected
+    const waveletChecked = document.getElementById('wavelet').checked;
+    const kalmanChecked = document.getElementById('kalman').checked;
+    const ssaChecked = document.getElementById('ssa').checked;
+    const emdChecked = document.getElementById('emd').checked;
+    
+    // Show/hide the main denoising settings container
+    if (waveletChecked || kalmanChecked || ssaChecked || emdChecked) {
+        denoiseSettings.style.display = 'block';
     } else {
-        customDateRange.style.display = 'none';
+        denoiseSettings.style.display = 'none';
     }
-});
+    
+    // Show/hide specific method settings
+    waveletSettings.style.display = waveletChecked ? 'block' : 'none';
+    kalmanSettings.style.display = kalmanChecked ? 'block' : 'none';
+    ssaSettings.style.display = ssaChecked ? 'block' : 'none';
+    emdSettings.style.display = emdChecked ? 'block' : 'none';
+}
 
 function fetchAndPlot() {
     // Destroy existing charts if they exist and have a destroy method
@@ -25,44 +138,64 @@ function fetchAndPlot() {
 
     const instrument = document.getElementById('instrument').value;
     const timeframe = document.getElementById('timeframe').value;
-    const dateRange = document.getElementById('date_range').value;
-    let dateFrom = null;
-    let dateTo = null;
+    const numCandles = parseInt(document.getElementById('num_candles').value);
 
-    if (dateRange === 'custom') {
-        dateFrom = document.getElementById('date_from').value;
-        dateTo = document.getElementById('date_to').value;
-    } else {
-        const now = new Date();
-        dateTo = now.toISOString().slice(0, 19);
-        let days = 1;
-        if (dateRange === '7d') days = 7;
-        if (dateRange === '30d') days = 30;
-        const past = new Date(now.setDate(now.getDate() - days));
-        dateFrom = past.toISOString().slice(0, 19);
-    }
-
-    const sma = document.getElementById('sma').checked;
-    const rsi = document.getElementById('rsi').checked;
+    // Save the instrument, timeframe, and number of candles to localStorage
+    localStorage.setItem('lastUsedInstrument', instrument);
+    localStorage.setItem('lastUsedTimeframe', timeframe);
+    localStorage.setItem('lastUsedNumCandles', numCandles);
     
-    // Get all selected denoising methods
+    // Show loading overlay
+    const loadingOverlay = document.getElementById('loading-overlay');
+    if (loadingOverlay) {
+        loadingOverlay.classList.remove('hidden');
+    }
+    
+    // Get all selected denoising methods and their settings
     const denoiseMethods = [];
-    if (document.getElementById('wavelet').checked) denoiseMethods.push('wavelet');
-    if (document.getElementById('kalman').checked) denoiseMethods.push('kalman');
-    if (document.getElementById('ssa').checked) denoiseMethods.push('ssa');
-    if (document.getElementById('emd').checked) denoiseMethods.push('emd');
-
-    const indicators = [];
-    if (sma) indicators.push('sma');
-    if (rsi) indicators.push('rsi');
+    const denoiseSettings = {};
+    
+    // Wavelet settings
+    if (document.getElementById('wavelet').checked) {
+        denoiseMethods.push('wavelet');
+        denoiseSettings.wavelet = {
+            level: document.getElementById('wavelet-level').value,
+            type: document.getElementById('wavelet-type').value
+        };
+    }
+    
+    // Kalman settings
+    if (document.getElementById('kalman').checked) {
+        denoiseMethods.push('kalman');
+        denoiseSettings.kalman = {
+            q: document.getElementById('kalman-q').value,
+            r: document.getElementById('kalman-r').value
+        };
+    }
+    
+    // SSA settings
+    if (document.getElementById('ssa').checked) {
+        denoiseMethods.push('ssa');
+        denoiseSettings.ssa = {
+            window: document.getElementById('ssa-window').value,
+            groups: document.getElementById('ssa-groups').value
+        };
+    }
+    
+    // EMD settings
+    if (document.getElementById('emd').checked) {
+        denoiseMethods.push('emd');
+        denoiseSettings.emd = {
+            imfs: document.getElementById('emd-imfs').value
+        };
+    }
 
     const requestData = {
         instrument,
         timeframe,
-        date_from: dateFrom || null,
-        date_to: dateTo || null,
-        indicators,
-        denoise_methods: denoiseMethods
+        bars: numCandles,
+        denoise_methods: denoiseMethods,
+        denoise_settings: denoiseSettings
     };
 
     fetch('/fetch_data', {
@@ -72,6 +205,11 @@ function fetchAndPlot() {
     })
     .then(response => response.json())
     .then(data => {
+        // Hide loading overlay
+        if (loadingOverlay) {
+            loadingOverlay.classList.add('hidden');
+        }
+        
         console.log('Data received:', data);
         console.log('Data keys:', Object.keys(data));
         if (data.error) {
@@ -110,7 +248,7 @@ function fetchAndPlot() {
                     label: 'Close',
                     data: data.time.map((t, i) => ({ x: new Date(t), y: data.close[i] })),
                     borderColor: 'blue',
-                    borderWidth: 2,
+                    borderWidth: 3,
                     fill: false,
                     tension: 0,
                     pointRadius: 0
@@ -119,7 +257,7 @@ function fetchAndPlot() {
                     label: 'Open',
                     data: data.time.map((t, i) => ({ x: new Date(t), y: data.open[i] })),
                     borderColor: 'green',
-                    borderWidth: 1,
+                    borderWidth: 3,
                     fill: false,
                     tension: 0,
                     pointRadius: 0,
@@ -129,7 +267,7 @@ function fetchAndPlot() {
                     label: 'High',
                     data: data.time.map((t, i) => ({ x: new Date(t), y: data.high[i] })),
                     borderColor: 'rgba(0, 255, 0, 0.5)',
-                    borderWidth: 1,
+                    borderWidth: 3,
                     fill: false,
                     tension: 0,
                     pointRadius: 0,
@@ -138,8 +276,8 @@ function fetchAndPlot() {
                 {
                     label: 'Low',
                     data: data.time.map((t, i) => ({ x: new Date(t), y: data.low[i] })),
-                    borderColor: 'rgba(255, 0, 0, 0.5)',
-                    borderWidth: 1,
+                    borderColor: 'red',
+                    borderWidth: 3,
                     fill: false,
                     tension: 0,
                     pointRadius: 0,
@@ -196,32 +334,6 @@ function fetchAndPlot() {
             }
         });
 
-        if (data.sma) {
-            ohlcChart.data.datasets.push({
-                label: 'SMA',
-                type: 'line',
-                data: data.time.map((t, i) => ({ x: new Date(t), y: data.sma[i] })),
-                borderColor: '#ff0000',
-                fill: false
-            });
-        }
-        if (data.rsi) {
-            ohlcChart.data.datasets.push({
-                label: 'RSI',
-                type: 'line',
-                data: data.time.map((t, i) => ({ x: new Date(t), y: data.rsi[i] })),
-                borderColor: '#0000ff',
-                fill: false,
-                yAxisID: 'rsi-y'
-            });
-            ohlcChart.options.scales['rsi-y'] = {
-                type: 'linear',
-                position: 'right',
-                title: { display: true, text: 'RSI' },
-                min: 0,
-                max: 100
-            };
-        }
         // Define a set of colors for denoised series
         const denoiseColors = {
             'wavelet': '#00ffff', // Cyan
@@ -233,21 +345,9 @@ function fetchAndPlot() {
         // Add all denoised series to the chart
         console.log("Looking for denoised data in:", data);
         
-        // First, handle the default denoised_close if present
-        if (data.denoised_close) {
-            console.log("Found default denoised_close data");
-            ohlcChart.data.datasets.push({
-                label: 'Default Denoised',
-                type: 'line',
-                data: data.time.map((t, i) => ({ x: new Date(t), y: data.denoised_close[i] })),
-                borderColor: '#00ffff',
-                fill: false,
-                borderWidth: 1.5
-            });
-        }
-        
-        // Then handle method-specific denoised data
+        // Handle denoised data - only process method-specific denoised data
         const denoiseMethods = ['wavelet', 'kalman', 'ssa', 'emd'];
+        const processedMethods = new Set(); // Keep track of processed methods
         
         for (const key in data) {
             console.log("Checking key:", key);
@@ -257,20 +357,22 @@ function fetchAndPlot() {
                 key.startsWith(method + '_') && key.includes('denoised_')
             );
             
-            if (matchingMethod) {
+            if (matchingMethod && !processedMethods.has(matchingMethod)) {
                 console.log(`Found denoised data for method ${matchingMethod}, key: ${key}`);
                 const color = denoiseColors[matchingMethod] || '#' + Math.floor(Math.random()*16777215).toString(16);
                 
                 const timeKey = key.replace('_close', '_time'); // Construct the time key
                 if (data[timeKey]) {
                     ohlcChart.data.datasets.push({
-                        label: `${matchingMethod.charAt(0).toUpperCase() + matchingMethod.slice(1)} Denoised`,
+                        label: `${matchingMethod.charAt(0).toUpperCase() + matchingMethod.slice(1)}`,
                         type: 'line',
                         data: data[timeKey].map((t, i) => ({ x: new Date(t), y: data[key][i] })),
                         borderColor: color,
                         fill: false,
-                        borderWidth: 1.5
+                        borderWidth: 2,
+                        borderDash: [5, 5]
                     });
+                    processedMethods.add(matchingMethod); // Mark the method as processed
                 } else {
                     console.error(`Time data not found for ${key}`);
                 }
@@ -310,5 +412,12 @@ function fetchAndPlot() {
             }
         });
     })
-    .catch(error => console.error('Error:', error));
+    .catch(error => {
+        // Hide loading overlay
+        if (loadingOverlay) {
+            loadingOverlay.classList.add('hidden');
+        }
+        console.error('Error:', error);
+        alert('Error fetching data: ' + error.message);
+    });
 }

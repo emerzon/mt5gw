@@ -9,23 +9,26 @@ manager = MetaTraderManager()
 def index():
     return render_template('index.html')
 
+@app.route('/symbols')
+def get_symbols():
+    symbols = manager.get_all_symbols_list()
+    return jsonify(symbols)
+
 @app.route('/fetch_data', methods=['POST'])
 def fetch_data():
     # Extract parameters from the request
     data = request.get_json()
     instrument = data['instrument']
     timeframe = data['timeframe']
-    date_from = data.get('date_from')
-    date_to = data.get('date_to')
-    indicators = data.get('indicators', [])
+    bars = data.get('bars')
     denoise_methods = data.get('denoise_methods', [])
+    denoise_settings = data.get('denoise_settings', {})
 
     # Prepare parameters for fetch
     fetch_params = {
         'instrument': instrument,
         'timeframe': timeframe,
-        'date_from': date_from,
-        'date_to': date_to
+        'bars': bars
     }
 
     # Process each denoising method separately
@@ -37,34 +40,52 @@ def fetch_data():
         for method in denoise_methods:
             try:
                 print(f"Applying denoising method: {method}")
+                
+                # Get method-specific settings if available
+                method_settings = denoise_settings.get(method, {})
+                
+                # Create denoise_data dictionary with method and settings
+                denoise_data = {
+                    'method': method,
+                    'apply_columns': ['close']
+                }
+                
+                # Add method-specific settings to denoise_data
+                if method == 'wavelet' and method_settings:
+                    denoise_data['level'] = int(method_settings.get('level', 2))
+                    denoise_data['wavelet_type'] = method_settings.get('type', 'db4')
+                elif method == 'kalman' and method_settings:
+                    denoise_data['q'] = float(method_settings.get('q', 0.01))
+                    denoise_data['r'] = float(method_settings.get('r', 1.0))
+                elif method == 'ssa' and method_settings:
+                    denoise_data['window_length'] = int(method_settings.get('window', 20))
+                    denoise_data['groups'] = int(method_settings.get('groups', 2))
+                elif method == 'emd' and method_settings:
+                    imfs_value = method_settings.get('imfs', '2')
+                    n_imfs_to_remove = int(imfs_value)
+
+                    denoise_data['emd_params'] = {'n_imfs_to_remove': n_imfs_to_remove}
+
                 method_params = {
                     'instrument': instrument,
                     'timeframe': timeframe,
-                    'date_from': date_from,
-                    'date_to': date_to,
-                    'denoise_data': {'method': method, 'apply_columns': ['close']}
+                    'bars': bars,
+                    'denoise_data': denoise_data
                 }
+
+                print(f"Method params: {method_params}")
                 df_denoised = manager.fetch(**method_params)
+
                 # Store the denoised column with method name for identification
                 for col in df_denoised.columns:
                     if col.startswith('denoised_close'):
                         print(f"Found and processing denoised_close column for method: {method}")
                         # Use consistent naming: method_denoised_close
                         denoised_data[f"{method}_denoised_close"] = df_denoised[col].tolist()
-                        #Also return a time array
+                        # Also return a time array
                         denoised_data[f"{method}_denoised_time"] = df_denoised.index.strftime('%Y-%m-%d %H:%M:%S').tolist()
             except Exception as e:
                 print(f"Error applying {method} denoising: {str(e)}")
-
-    # Add technical indicators if selected
-    talib_indicators = []
-    for ind in indicators:
-        if ind == 'sma':
-            talib_indicators.append({'method': 'SMA', 'args': ['c'], 'kwargs': {'timeperiod': 14}})
-        elif ind == 'rsi':
-            talib_indicators.append({'method': 'RSI', 'args': ['c'], 'kwargs': {'timeperiod': 14}})
-    if talib_indicators:
-        fetch_params['talib_indicators'] = talib_indicators
 
     # Fetch data from MetaTraderManager (without denoising)
     try:
@@ -88,15 +109,6 @@ def fetch_data():
             print(f"Adding separately denoised data: {key}, values: {values[:10]}...")  # Print first 10 values
             data_dict[key] = values
         print(f"data_dict after denoised data: {data_dict.keys()}")
-
-        # Add indicator columns
-        for ind in indicators:
-            for col in df.columns:
-                if ind == 'sma' and col.startswith('sma_'):
-                    data_dict['sma'] = df[col].tolist()
-                if ind == 'rsi' and col.startswith('rsi_'):
-                    data_dict['rsi'] = df[col].tolist()
-        print(f"data_dict after indicators: {data_dict.keys()}")
         
         return jsonify(data_dict)
 
