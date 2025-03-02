@@ -17,7 +17,8 @@ setup(
         'TA-Lib>=0.4.0',
         'pandas-ta>=0.3.0',
         'tulipy>=0.4.0',
-        'python-dateutil>=2.8.0'
+        'python-dateutil>=2.8.0',
+        'EMD-signal>=1.6.4'
     ],
     python_requires='>=3.7',
     classifiers=[

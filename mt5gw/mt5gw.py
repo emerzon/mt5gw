@@ -306,11 +306,15 @@ class MetaTraderManager:
             - transition_covariance (float): Covariance of process noise (default: 1e-4).
             - observation_covariance (float): Covariance of observation noise (default: 1).
             - initial_state_mean (float): Initial state mean (default: 0).
+            - initial_state_mean (float): Initial state mean (default: first value of data).
             - initial_state_covariance (float): Initial state covariance (default: 1).
 
             Returns:
             - pd.Series: Denoised time series with the same index as the input.
             """
+            if initial_state_mean == 0:
+                initial_state_mean = data.iloc[0]
+
             kf = KalmanFilter(
                 transition_matrices=transition_matrices,
                 observation_matrices=observation_matrices,
@@ -344,13 +348,13 @@ class MetaTraderManager:
         - pd.DataFrame: DataFrame with denoised columns.
         """
         if not apply_columns:
-            apply_columns = df.columns
-        
+            apply_columns = df.select_dtypes(include=np.number).columns
+
         for column in apply_columns:
-            if pd.api.types.is_numeric_dtype(df[column]):
+            if column in df.columns and pd.api.types.is_numeric_dtype(df[column]):
                 new_column_name = f"denoised_{column}" if not preserve_col_names else column
                 data = df[column].dropna()
-                
+
                 if denoise_func is not None:
                     df[new_column_name] = denoise_func(data)
                 elif method == 'wavelet':
@@ -366,9 +370,13 @@ class MetaTraderManager:
                     df[new_column_name] = self.emd_denoising(data, n_imfs_to_remove)
                 else:
                     raise ValueError(f"Unsupported denoising method: {method}")
-        
+
+                # Scale the denoised data to be closer to the original data range
+                scaling_factor = data.mean() / df[new_column_name].mean()
+                df[new_column_name] = df[new_column_name] * scaling_factor
+
         return df
-   
+
     def add_indicators(self, library, indicators, rf, silent=False):
         suffix_counter = {}
         now = datetime.datetime.now()
@@ -539,6 +547,8 @@ class MetaTraderManager:
         rf = rf.drop(columns='time')
         rf = rf.set_index(["Date"], drop=True)
 
+        print(rf.head())  # Add this line
+
         if add_gap:
             rf['gap'] = rf['open'] - rf['close'].shift(1)
             rf['gap'] = rf['gap'].fillna(value=0)
@@ -561,6 +571,7 @@ class MetaTraderManager:
             kalman_params = denoise_data.get('kalman_params', {})
             ssa_params = denoise_data.get('ssa_params', {})
             emd_params = denoise_data.get('emd_params', {})
+            print("Denoising data using method: %s" % method)
             rf = self.denoise_dataframe(
                 rf,
                 denoise_func=denoise_func,
@@ -664,4 +675,10 @@ class MetaTraderManager:
 
         self.mt5.shutdown()
 
+        # Ensure correct data types before returning
+        for col in rf.columns:
+            if col.startswith('denoised_'):
+                rf[col] = rf[col].astype('float64')
+            if col == 'Date' or col.endswith('_time'):
+                rf[col] = pd.to_datetime(rf[col])
         return rf.copy()

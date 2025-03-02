@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MetaTrader Data Visualizer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}?v=1">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+
+</head>
+<body>
+    <div class="app-container">
+        <header class="main-header">
+            <div class="logo">
+                <i class="fas fa-chart-line"></i>
+                <h1>MetaTrader Data Visualizer</h1>
+            </div>
+            <div class="theme-toggle">
+                <i class="fas fa-moon"></i>
+            </div>
+        </header>
+        
+        <div class="content-wrapper">
+            <aside class="sidebar">
+                <section class="control-panel">
+                    <div class="panel-header">
+                        <h2>Configuration</h2>
+                        <button id="toggle-panel" class="icon-button">
+                            <i class="fas fa-angle-down"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="panel-body">
+                        <div class="control-group">
+                            <div class="control-item">
+                                <label for="instrument"><i class="fas fa-tag"></i> Instrument</label>
+                                <input type="text" id="instrument" value="EURUSD">
+                            </div>
+                            
+                            <div class="control-item">
+                                <label for="timeframe"><i class="fas fa-clock"></i> Timeframe</label>
+                                <select id="timeframe" class="styled-select">
+                                    <option value="1min">1 Minute</option>
+                                    <option value="5min">5 Minutes</option>
+                                    <option value="15min">15 Minutes</option>
+                                    <option value="30min">30 Minutes</option>
+                                    <option value="1h" selected>1 Hour</option>
+                                    <option value="4h">4 Hours</option>
+                                    <option value="1d">1 Day</option>
+                                    <option value="1w">1 Week</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="control-group">
+                            <div class="control-item">
+                                <label for="date_range"><i class="fas fa-calendar-alt"></i> Date Range</label>
+                                <select id="date_range" class="styled-select">
+                                    <option value="1d">Last Day</option>
+                                    <option value="7d" selected>Last Week</option>
+                                    <option value="30d">Last Month</option>
+                                    <option value="90d">Last Quarter</option>
+                                    <option value="custom">Custom Range</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div id="custom_date_range" class="control-group" style="display: none;">
+                            <div class="control-item">
+                                <label for="date_from"><i class="fas fa-calendar-minus"></i> From</label>
+                                <input type="datetime-local" id="date_from" class="styled-input">
+                            </div>
+                            
+                            <div class="control-item">
+                                <label for="date_to"><i class="fas fa-calendar-plus"></i> To</label>
+                                <input type="datetime-local" id="date_to" class="styled-input">
+                            </div>
+                        </div>
+                        
+                        <div class="control-group">
+                            <div class="control-item">
+                                <label><i class="fas fa-chart-bar"></i> Technical Indicators</label>
+                                <div class="checkbox-group">
+                                    <label class="checkbox-container">
+                                        <input type="checkbox" id="sma" value="sma">
+                                        <span class="checkmark"></span>
+                                        <span>SMA</span>
+                                    </label>
+                                    <label class="checkbox-container">
+                                        <input type="checkbox" id="rsi" value="rsi">
+                                        <span class="checkmark"></span>
+                                        <span>RSI</span>
+                                    </label>
+                                    <label class="checkbox-container">
+                                        <input type="checkbox" id="macd" value="macd">
+                                        <span class="checkmark"></span>
+                                        <span>MACD</span>
+                                    </label>
+                                    <label class="checkbox-container">
+                                        <input type="checkbox" id="bbands" value="bbands">
+                                        <span class="checkmark"></span>
+                                        <span>Bollinger</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="control-group">
+                            <div class="control-item">
+                                <label><i class="fas fa-filter"></i> Denoising Methods</label>
+                                <div class="checkbox-group">
+                                    <label class="checkbox-container">
+                                        <input type="checkbox" id="wavelet" value="wavelet">
+                                        <span class="checkmark"></span>
+                                        <span>Wavelet</span>
+                                    </label>
+                                    <label class="checkbox-container">
+                                        <input type="checkbox" id="kalman" value="kalman">
+                                        <span class="checkmark"></span>
+                                        <span>Kalman</span>
+                                    </label>
+                                    <label class="checkbox-container">
+                                        <input type="checkbox" id="ssa" value="ssa">
+                                        <span class="checkmark"></span>
+                                        <span>SSA</span>
+                                    </label>
+                                    <label class="checkbox-container">
+                                        <input type="checkbox" id="emd" value="emd">
+                                        <span class="checkmark"></span>
+                                        <span>EMD</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="control-actions">
+                            <button id="fetch-data" class="primary-button" onclick="fetchAndPlot()">
+                                <i class="fas fa-sync-alt"></i> Fetch Data
+                            </button>
+                        </div>
+                    </div>
+                </section>
+            </aside>
+            
+            <main class="main-content">
+                <section class="chart-container">
+                    <div id="loading-overlay" class="loading-overlay hidden">
+                        <div class="spinner"></div>
+                        <p>Loading data...</p>
+                    </div>
+                    
+                    <div class="chart-card price-chart">
+                        <div class="chart-header">
+                            <h3><i class="fas fa-chart-line"></i> Price Chart</h3>
+                            <div class="chart-actions">
+                                <button id="toggle-price-type" class="icon-button" title="Toggle Chart Type">
+                                    <i class="fas fa-exchange-alt"></i>
+                                </button>
+                                <button id="download-chart" class="icon-button" title="Download Chart">
+                                    <i class="fas fa-download"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="chart-body">
+                            <canvas id="ohlcChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-card volume-chart">
+                        <div class="chart-header">
+                            <h3><i class="fas fa-chart-bar"></i> Volume Chart</h3>
+                            <div class="chart-actions">
+                                <button id="toggle-volume-scale" class="icon-button" title="Toggle Scale">
+                                    <i class="fas fa-compress-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="chart-body">
+                            <canvas id="volumeChart"></canvas>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+        
+        <footer class="main-footer">
+            <p>MT5GW Data Visualizer &copy; 2024</p>
+            <div class="footer-links">
+                <a href="#" title="Documentation"><i class="fas fa-book"></i></a>
+                <a href="#" title="Settings"><i class="fas fa-cog"></i></a>
+                <a href="#" title="About"><i class="fas fa-info-circle"></i></a>
+            </div>
+        </footer>
+    </div>
+    
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

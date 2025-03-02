@@ -1,0 +1,271 @@
+body {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    margin: 0;
+    background-color: #f0f0f0;
+    color: #333;
+}
+
+/* General Styles */
+.app-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.content-wrapper {
+    display: flex;
+    flex: 1;
+}
+
+/* Header Styles */
+.main-header {
+    background-color: #0056b3;
+    color: white;
+    padding: 10px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.logo i {
+    font-size: 1.5em;
+}
+
+.theme-toggle {
+    cursor: pointer;
+    font-size: 1.5em;
+}
+
+/* Sidebar Styles */
+.sidebar {
+    width: 200px;
+    background-color: #f4f4f4;
+    padding: 20px;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+}
+
+.control-panel {
+    margin-bottom: 20px;
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.panel-header h2 {
+    margin: 0;
+    font-size: 1.2em;
+}
+
+.icon-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2em;
+}
+
+.panel-body {
+    padding: 10px;
+}
+
+.control-group {
+    margin-bottom: 15px;
+}
+
+.control-item {
+    margin-bottom: 10px;
+}
+
+.control-item label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.styled-select,
+.styled-input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+.checkbox-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.checkbox-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 5px;
+    cursor: pointer;
+}
+
+.checkmark {
+    position: relative;
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-right: 10px;
+}
+
+.control-actions {
+    text-align: center;
+}
+
+.primary-button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+/* Main Content Styles */
+.main-content {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+/* Chart container styles */
+.chart-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    height: calc(100vh - 150px); /* Adjust for header, footer, and padding */
+    overflow: hidden; /* Prevent scrolling */
+}
+
+/* Base chart card styles */
+.chart-card {
+    background-color: #fff;
+    padding: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    box-sizing: border-box;
+    margin: 0;
+    overflow: hidden; /* Prevent scrolling within cards */
+    position: relative; /* For absolute positioning of canvas */
+}
+
+/* Chart card heights */
+.chart-card {
+    margin-bottom: 10px;
+}
+
+/* Price chart - 75% of container height */
+.price-chart {
+    height: 75%;
+}
+
+/* Volume chart - 25% of container height */
+.volume-chart {
+    height: 25%;
+}
+
+/* Chart header styles */
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    height: 30px; /* Fixed height for header */
+}
+
+/* Chart body styles */
+.chart-body {
+    width: 100%;
+    height: calc(100% - 40px); /* Subtract header height */
+    position: relative; /* For canvas positioning */
+}
+
+/* Canvas styles */
+canvas {
+    display: block;
+}
+
+/* Ensure Chart.js maintains aspect ratio */
+.chart-card {
+    position: relative;
+}
+
+/* Add specific styles for each chart */
+.price-chart .chart-body {
+    min-height: 300px; /* Ensure minimum height for the price chart */
+}
+
+.volume-chart .chart-body {
+    min-height: 100px; /* Ensure minimum height for the volume chart */
+}
+
+.chart-actions {
+    display: flex;
+    gap: 10px;
+}
+
+/* Footer Styles */
+.main-footer {
+    background-color: #333;
+    color: white;
+    text-align: center;
+    padding: 10px;
+}
+
+.footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 10px;
+}
+
+.footer-links a {
+    color: white;
+    text-decoration: none;
+}
+
+/* Loading Overlay Styles */
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+.loading-overlay.hidden {
+    display: none;
+}
+
+.spinner {
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    border-left-color: #000;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
